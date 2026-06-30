@@ -26,21 +26,65 @@ themeToggle.addEventListener("click", () => {
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
 const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
+const TAB_QUERY_KEY = "tab";
+const defaultTabId = tabButtons.find((btn) => btn.classList.contains("active"))?.dataset.tab || tabPanels[0]?.id;
+const validTabIds = new Set(tabPanels.map((panel) => panel.id));
+
+function normalizeTabId(tabId) {
+  if (typeof tabId !== "string") return defaultTabId;
+  return validTabIds.has(tabId) ? tabId : defaultTabId;
+}
+
+function getTabIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return normalizeTabId(params.get(TAB_QUERY_KEY));
+}
+
+function updateUrlWithTab(tabId, mode = "replace") {
+  const normalizedTabId = normalizeTabId(tabId);
+  const current = new URL(window.location.href);
+  if (current.searchParams.get(TAB_QUERY_KEY) === normalizedTabId) return;
+
+  current.searchParams.set(TAB_QUERY_KEY, normalizedTabId);
+  const nextUrl = `${current.pathname}${current.search}${current.hash}`;
+
+  if (mode === "push") {
+    history.pushState({ tab: normalizedTabId }, "", nextUrl);
+  } else {
+    history.replaceState({ tab: normalizedTabId }, "", nextUrl);
+  }
+}
+
 function activateTab(tabId) {
+  const normalizedTabId = normalizeTabId(tabId);
+
   for (const btn of tabButtons) {
-    const isActive = btn.dataset.tab === tabId;
+    const isActive = btn.dataset.tab === normalizedTabId;
     btn.classList.toggle("active", isActive);
     btn.setAttribute("aria-selected", isActive ? "true" : "false");
   }
 
   for (const panel of tabPanels) {
-    panel.classList.toggle("active", panel.id === tabId);
+    panel.classList.toggle("active", panel.id === normalizedTabId);
   }
+
+  return normalizedTabId;
 }
 
 for (const btn of tabButtons) {
-  btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+  btn.addEventListener("click", () => {
+    const activeTabId = activateTab(btn.dataset.tab);
+    updateUrlWithTab(activeTabId, "push");
+  });
 }
+
+window.addEventListener("popstate", () => {
+  activateTab(getTabIdFromUrl());
+});
+
+const activeTabFromUrl = getTabIdFromUrl();
+activateTab(activeTabFromUrl);
+updateUrlWithTab(activeTabFromUrl, "replace");
 
 // ====== CẤU HÌNH ======
 const TZ = "Asia/Ho_Chi_Minh"; // UTC+7
