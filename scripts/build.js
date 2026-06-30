@@ -6,13 +6,13 @@ const terser = require("terser");
 
 async function build() {
   const root = process.cwd();
-  const htmlPath = path.join(root, "countdown.html");
+  const htmlPath = path.join(root, "index.html");
   const cssPath = path.join(root, "countdown.css");
   const jsPath = path.join(root, "countdown.js");
-  const outputPath = path.join(root, "countdown.min.html");
+  const outputPath = path.join(root, "index.min.html");
 
   if (!fs.existsSync(htmlPath) || !fs.existsSync(cssPath) || !fs.existsSync(jsPath)) {
-    throw new Error("Missing required files: countdown.html, countdown.css, or countdown.js");
+    throw new Error("Missing required files: index.html, countdown.css, or countdown.js");
   }
 
   const htmlRaw = fs.readFileSync(htmlPath, "utf8");
