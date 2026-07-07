@@ -8,27 +8,34 @@
   <link rel="stylesheet" href="countdown.css" />
 </head>
 <body>
+  <div class="lang-switch">
+    <label for="langSelect" id="langLabel">Ngôn ngữ</label>
+    <select id="langSelect" aria-label="Chọn ngôn ngữ">
+      <option value="vi">VI</option>
+      <option value="en">EN</option>
+    </select>
+  </div>
   <button class="theme-toggle" id="themeToggle" title="Chuyển đổi chủ đề">🌙</button>
   <div class="card">
-    <h1>⏳ Countdown Lương + Giờ Về (UTC+7)</h1>
-    <div class="sub">Chuyển tab để xem nhanh countdown giờ về hoặc countdown ngày nhận lương.</div>
+    <h1 id="pageTitle">⏳ Countdown Lương + Giờ Về (UTC+7)</h1>
+    <div class="sub" id="pageSubtitle">Chuyển tab để xem nhanh countdown giờ về hoặc countdown ngày nhận lương.</div>
 
-    <div class="tabs" role="tablist" aria-label="Các tab countdown">
-      <button class="tab-btn active" type="button" role="tab" aria-selected="true" data-tab="workTab">⏰ Giờ về</button>
-      <button class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="salaryTab">💰 Ngày nhận lương</button>
+    <div class="tabs" id="tabsRoot" role="tablist" aria-label="Các tab countdown">
+      <button class="tab-btn active" id="workTabBtn" type="button" role="tab" aria-selected="true" data-tab="workTab">⏰ Giờ về</button>
+      <button class="tab-btn" id="salaryTabBtn" type="button" role="tab" aria-selected="false" data-tab="salaryTab">💰 Ngày nhận lương</button>
     </div>
 
     <section id="workTab" class="tab-panel active" role="tabpanel">
-      <h2>⏰ Countdown Giờ Về (Ca làm 08:00-17:00, nghỉ trưa 11:00-12:00, T2-T6, UTC+7)</h2>
+      <h2 id="workHeading">⏰ Countdown Giờ Về (Ca làm 08:00-17:00, nghỉ trưa 11:00-12:00, T2-T6, UTC+7)</h2>
       <div class="sub" id="workMilestoneInfo">Countdown đến mốc thời gian kế tiếp...</div>
       <div class="countdown work">
-        <div class="box"><div class="num work-num" id="wh">0</div><div class="label">Giờ</div></div>
-        <div class="box"><div class="num work-num" id="wm">0</div><div class="label">Phút</div></div>
-        <div class="box"><div class="num work-num" id="ws">0</div><div class="label">Giây</div></div>
+        <div class="box"><div class="num work-num" id="wh">0</div><div class="label" id="workHourLabel">Giờ</div></div>
+        <div class="box"><div class="num work-num" id="wm">0</div><div class="label" id="workMinuteLabel">Phút</div></div>
+        <div class="box"><div class="num work-num" id="ws">0</div><div class="label" id="workSecondLabel">Giây</div></div>
       </div>
       <div class="row" id="workInfo"></div>
       <div class="segment-wrap">
-        <div class="segment-title">Hiện tại đang ở khung giờ:</div>
+        <div class="segment-title" id="segmentTitle">Hiện tại đang ở khung giờ:</div>
         <div class="segment-bar" id="workSegments">
           <div class="segment-item" id="segBefore" style="--w: 4" title="Trước 08:00"></div>
           <div class="segment-item" id="segGrace" style="--w: 1" title="08:00-08:15"></div>
@@ -38,12 +45,12 @@
           <div class="segment-item" id="segAfter" style="--w: 4" title="Sau 17:00"></div>
         </div>
         <div class="segment-legend">
-          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-before)"></span>Trước 08:00</span>
-          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-grace)"></span>08:00-08:15</span>
-          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-morning)"></span>08:15-11:00</span>
-          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-lunch)"></span>11:00-12:00</span>
-          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-afternoon)"></span>12:00-17:00</span>
-          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-after)"></span>Sau 17:00</span>
+          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-before)"></span><span id="legendBefore">Trước 08:00</span></span>
+          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-grace)"></span><span id="legendGrace">08:00-08:15</span></span>
+          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-morning)"></span><span id="legendMorning">08:15-11:00</span></span>
+          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-lunch)"></span><span id="legendLunch">11:00-12:00</span></span>
+          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-afternoon)"></span><span id="legendAfternoon">12:00-17:00</span></span>
+          <span class="legend-chip"><span class="legend-dot" style="background: var(--seg-after)"></span><span id="legendAfter">Sau 17:00</span></span>
         </div>
         <div class="segment-current" id="workCurrentSegment">Đang chờ cập nhật...</div>
         <div class="segment-note" id="workScheduleInfo">Khung chuẩn 08:00-17:00, nghỉ trưa 11:00-12:00, đi muộn tối đa đến 08:15.</div>
@@ -51,24 +58,24 @@
     </section>
 
     <section id="salaryTab" class="tab-panel" role="tabpanel">
-      <h2>💰 Countdown Ngày Nhận Lương</h2>
-      <div class="sub">
+      <h2 id="salaryHeading">💰 Countdown Ngày Nhận Lương</h2>
+      <div class="sub" id="salarySub">
         Ngày lương: <b>19 hàng tháng</b>. Nếu rơi vào <b>T7/CN</b> hoặc <b>ngày lễ</b> thì dời sang <b>ngày làm việc tiếp theo</b>.
         Thời điểm nhận lương: <b>15:00</b> (UTC+7).
       </div>
 
       <div class="countdown">
-        <div class="box"><div class="num" id="d">0</div><div class="label">Ngày</div></div>
-        <div class="box"><div class="num" id="h">0</div><div class="label">Giờ</div></div>
-        <div class="box"><div class="num" id="m">0</div><div class="label">Phút</div></div>
-        <div class="box"><div class="num" id="s">0</div><div class="label">Giây</div></div>
+        <div class="box"><div class="num" id="d">0</div><div class="label" id="salaryDayLabel">Ngày</div></div>
+        <div class="box"><div class="num" id="h">0</div><div class="label" id="salaryHourLabel">Giờ</div></div>
+        <div class="box"><div class="num" id="m">0</div><div class="label" id="salaryMinuteLabel">Phút</div></div>
+        <div class="box"><div class="num" id="s">0</div><div class="label" id="salarySecondLabel">Giây</div></div>
       </div>
 
       <div class="row" id="nextPayInfo"></div>
       <div class="row" id="todayInfo"></div>
     </section>
 
-    <div class="footer">Múi giờ áp dụng: <b>Asia/Ho_Chi_Minh (UTC+7)</b></div>
+    <div class="footer" id="footerText">Múi giờ áp dụng: <b>Asia/Ho_Chi_Minh (UTC+7)</b></div>
   </div>
 
   <script src="countdown.js"></script>
