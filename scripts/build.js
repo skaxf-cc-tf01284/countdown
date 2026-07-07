@@ -8,23 +8,26 @@ async function build() {
   const root = process.cwd();
   const htmlPath = path.join(root, "index.html");
   const cssPath = path.join(root, "countdown.css");
+  const i18nPath = path.join(root, "i18n.js");
   const jsPath = path.join(root, "countdown.js");
   const outputPath = path.join(root, "index.min.html");
 
-  if (!fs.existsSync(htmlPath) || !fs.existsSync(cssPath) || !fs.existsSync(jsPath)) {
-    throw new Error("Missing required files: index.html, countdown.css, or countdown.js");
+  if (!fs.existsSync(htmlPath) || !fs.existsSync(cssPath) || !fs.existsSync(i18nPath) || !fs.existsSync(jsPath)) {
+    throw new Error("Missing required files: index.html, countdown.css, i18n.js, or countdown.js");
   }
 
   const htmlRaw = fs.readFileSync(htmlPath, "utf8");
   const cssRaw = fs.readFileSync(cssPath, "utf8");
+  const i18nRaw = fs.readFileSync(i18nPath, "utf8");
   const jsRaw = fs.readFileSync(jsPath, "utf8");
+  const mergedJsRaw = `${i18nRaw}\n\n${jsRaw}`;
 
   const cssMin = new CleanCSS({ level: 2 }).minify(cssRaw);
   if (cssMin.errors.length) {
     throw new Error(`CSS minify error: ${cssMin.errors.join("; ")}`);
   }
 
-  const jsMin = await terser.minify(jsRaw, {
+  const jsMin = await terser.minify(mergedJsRaw, {
     compress: true,
     mangle: true,
     format: { comments: false }
@@ -36,6 +39,7 @@ async function build() {
 
   const inlined = htmlRaw
     .replace(/<link\s+rel="stylesheet"\s+href="countdown\.css"\s*\/?\s*>/i, `<style>${cssMin.styles}</style>`)
+    .replace(/<script\s+src="i18n\.js"\s*><\/script>/i, "")
     .replace(/<script\s+src="countdown\.js"\s*><\/script>/i, `<script>${jsMin.code}</script>`);
 
   const htmlMin = await minifyHtml(inlined, {
