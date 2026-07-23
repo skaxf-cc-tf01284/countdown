@@ -1789,19 +1789,14 @@ export const useMapStore = defineStore('map', () => {
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const target = center.clone()
-      // const halfWidth = (size.x * padding3d) / 2
-      // const halfHeight = (size.y * padding3d) / 2
-      // const halfDepth = (size.z * padding3d) / 2
-
-      const sphere = new THREE.Sphere()
-      mapBounds.getBoundingSphere(sphere)
-      const radius = Math.max(sphere.radius * padding3d, minSpan)
       const vFov = THREE.MathUtils.degToRad(camera.fov)
       const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect)
 
-      const fitDistanceV = radius / Math.sin(vFov / 2)
-      const fitDistanceH = radius / Math.sin(hFov / 2)
-      let fitDistance = Math.max(fitDistanceV, fitDistanceH)
+      const fitWidth = Math.max(size.x, minSpan) * padding3d
+      const fitHeight = Math.max(size.z, minSpan) * padding3d
+      const fitDistanceH = fitWidth / (2 * Math.tan(hFov / 2))
+      const fitDistanceV = fitHeight / (2 * Math.tan(vFov / 2))
+      let fitDistance = Math.max(fitDistanceH, fitDistanceV)
 
       if (!Number.isFinite(fitDistance) || fitDistance <= 0) {
         fitDistance = camera.position.distanceTo(controls.target)
@@ -1809,10 +1804,6 @@ export const useMapStore = defineStore('map', () => {
 
       if (Number.isFinite(controls.minDistance)) {
         fitDistance = Math.max(fitDistance, controls.minDistance)
-      }
-
-      if (Number.isFinite(controls.maxDistance)) {
-        fitDistance = Math.min(fitDistance, controls.maxDistance)
       }
 
       const cameraDir = camera.position.clone().sub(controls.target)
