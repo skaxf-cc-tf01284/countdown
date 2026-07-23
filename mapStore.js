@@ -1802,6 +1802,28 @@ export const useMapStore = defineStore('map', () => {
       controls.update()
       sceneZoom.value = camera.zoom
 
+      if (typeof controls.dispatchEvent === 'function') {
+        controls.dispatchEvent({ type: 'change' })
+      }
+      cameraTarget.value = {
+        mode: 'OrthographicCamera',
+        position: {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z
+        },
+        target: {
+          x: controls.target.x,
+          y: controls.target.y,
+          z: controls.target.z
+        },
+        left: camera.left,
+        right: camera.right,
+        top: camera.top,
+        bottom: camera.bottom,
+        zoom: camera.zoom
+      }
+
       return true
     }
 

@@ -197,9 +197,26 @@ const calculateCenter = () => {
 
   const xs = []
   const zs = []
+  let sumX = 0
+  let sumZ = 0
+  let count = 0
 
-  path.forEach(n => { xs.push(n.realX); zs.push(n.realY) })
-  ports.forEach(p => { xs.push(p.realX); zs.push(p.realY) })
+  path.forEach(n => {
+    xs.push(n.realX)
+    zs.push(n.realY)
+    sumX += n.realX
+    sumZ += n.realY
+    count += 1
+  })
+  ports.forEach(p => {
+    xs.push(p.realX)
+    zs.push(p.realY)
+    sumX += p.realX
+    sumZ += p.realY
+    count += 1
+  })
+
+  if (count === 0) return
 
   const minX = Math.min(...xs)
   const maxX = Math.max(...xs)
@@ -211,8 +228,8 @@ const calculateCenter = () => {
   mapMinY.value = minZ
   mapMaxY.value = maxZ
 
-  centerX.value = (minX + maxX) / 2
-  centerZ.value = (minZ + maxZ) / 2
+  centerX.value = sumX / count
+  centerZ.value = sumZ / count
 }
 
 // 노드 생성
