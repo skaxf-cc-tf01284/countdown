@@ -1648,43 +1648,35 @@ export const useMapStore = defineStore('map', () => {
     return bounds
   }
 
-  const getMapBounds = () => {
-    const safeArray = (value) => Array.isArray(value) ? value : []
+  const getMapBounds = (options = {}) => {
+    const { preferShelf = true } = options
+
+    // Prioritize shelf cluster bounds so Zoom Fit focuses on operational area,
+    // not on sparse outliers (labels/highlights/isolated objects).
+    if (preferShelf && shelfStore.rmsEnabled) {
+      const shelfBounds = getBoundsFromObjects(toRaw(shelfMeshes.value))
+      if (shelfBounds) {
+        return shelfBounds
+      }
+    }
 
     const coreMeshBounds = getBoundsFromObjects([
-      ...safeArray(toRaw(pathMeshes.value)),
-      ...safeArray(toRaw(nodeMeshes.value)),
-      ...safeArray(toRaw(portMeshes.value))
+      ...toRaw(pathMeshes.value),
+      ...toRaw(nodeMeshes.value),
+      ...toRaw(portMeshes.value)
     ])
 
-    const shapeGroup = scene?.getObjectByName(SHAPE_GROUP_NAME)
-    const shapeBounds = shapeGroup ? getBoundsFromObjects([shapeGroup]) : null
-
-    let combinedBounds = null
     if (coreMeshBounds) {
-      combinedBounds = coreMeshBounds.clone()
-    }
-    if (shapeBounds) {
-      if (combinedBounds) {
-        combinedBounds.union(shapeBounds)
-      } else {
-        combinedBounds = shapeBounds.clone()
-      }
+      return coreMeshBounds
     }
 
-    if (shelfStore.rmsEnabled) {
-      const shelfBounds = getBoundsFromObjects(safeArray(toRaw(shelfMeshes.value)))
-      if (shelfBounds) {
-        if (combinedBounds) {
-          combinedBounds.union(shelfBounds)
-        } else {
-          combinedBounds = shelfBounds.clone()
-        }
+    // Include map shape group as fallback when core mesh arrays are not ready yet.
+    const shapeGroup = scene?.getObjectByName(SHAPE_GROUP_NAME)
+    if (shapeGroup) {
+      const shapeBounds = getBoundsFromObjects([shapeGroup])
+      if (shapeBounds) {
+        return shapeBounds
       }
-    }
-
-    if (combinedBounds) {
-      return combinedBounds
     }
 
     if (!scene) return null
@@ -1733,11 +1725,11 @@ export const useMapStore = defineStore('map', () => {
 
     const {
       padding2d = 1.12,
-      padding3d = 1.35,
+      padding3d = 1.2,
       minSpan = 1
     } = options
 
-    const mapBounds = getMapBounds()
+    const mapBounds = getMapBounds({ preferShelf: true })
     if (!mapBounds) return false
 
     const size = new THREE.Vector3()
@@ -1766,6 +1758,10 @@ export const useMapStore = defineStore('map', () => {
         nextZoom = Math.max(nextZoom, controls.minZoom)
       }
 
+      if (Number.isFinite(controls.maxZoom)) {
+        nextZoom = Math.min(nextZoom, controls.maxZoom)
+      }
+
       const target = new THREE.Vector3(center.x, 0, center.z)
       const offset = camera.position.clone().sub(controls.target)
 
@@ -1781,16 +1777,16 @@ export const useMapStore = defineStore('map', () => {
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const target = center.clone()
-      const sphere = new THREE.Sphere()
-      mapBounds.getBoundingSphere(sphere)
+      const halfWidth = (size.x * padding3d) / 2
+      const halfHeight = (size.y * padding3d) / 2
+      const halfDepth = (size.z * padding3d) / 2
 
-      const radius = Math.max(sphere.radius * padding3d, minSpan)
       const vFov = THREE.MathUtils.degToRad(camera.fov)
       const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect)
 
-      const fitDistanceV = radius / Math.sin(vFov / 2)
-      const fitDistanceH = radius / Math.sin(hFov / 2)
-      let fitDistance = Math.max(fitDistanceV, fitDistanceH)
+      const fitHeightDist = halfHeight / Math.tan(vFov / 2)
+      const fitWidthDist = halfWidth / Math.tan(hFov / 2)
+      let fitDistance = Math.max(fitHeightDist, fitWidthDist, halfDepth)
 
       if (!Number.isFinite(fitDistance) || fitDistance <= 0) {
         fitDistance = camera.position.distanceTo(controls.target)
@@ -1798,6 +1794,10 @@ export const useMapStore = defineStore('map', () => {
 
       if (Number.isFinite(controls.minDistance)) {
         fitDistance = Math.max(fitDistance, controls.minDistance)
+      }
+
+      if (Number.isFinite(controls.maxDistance)) {
+        fitDistance = Math.min(fitDistance, controls.maxDistance)
       }
 
       const cameraDir = camera.position.clone().sub(controls.target)
