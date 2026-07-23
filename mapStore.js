@@ -1650,33 +1650,37 @@ export const useMapStore = defineStore('map', () => {
 
   const getMapBounds = (options = {}) => {
     const { preferShelf = true } = options
+    const safeArray = (value) => Array.isArray(value) ? value : []
 
-    // Prioritize shelf cluster bounds so Zoom Fit focuses on operational area,
-    // not on sparse outliers (labels/highlights/isolated objects).
-    if (preferShelf && shelfStore.rmsEnabled) {
-      const shelfBounds = getBoundsFromObjects(toRaw(shelfMeshes.value))
-      if (shelfBounds) {
-        return shelfBounds
-      }
-    }
+    const shelfBounds = shelfStore.rmsEnabled
+      ? getBoundsFromObjects(safeArray(toRaw(shelfMeshes.value)))
+      : null
 
     const coreMeshBounds = getBoundsFromObjects([
-      ...toRaw(pathMeshes.value),
-      ...toRaw(nodeMeshes.value),
-      ...toRaw(portMeshes.value)
+      ...safeArray(toRaw(pathMeshes.value)),
+      ...safeArray(toRaw(nodeMeshes.value)),
+      ...safeArray(toRaw(portMeshes.value))
     ])
+
+    const shapeGroup = scene?.getObjectByName(SHAPE_GROUP_NAME)
+    const shapeBounds = shapeGroup ? getBoundsFromObjects([shapeGroup]) : null
+
+    if (preferShelf && shelfBounds) {
+      if (coreMeshBounds) {
+        shelfBounds.union(coreMeshBounds)
+      }
+      if (shapeBounds) {
+        shelfBounds.union(shapeBounds)
+      }
+      return shelfBounds
+    }
 
     if (coreMeshBounds) {
       return coreMeshBounds
     }
 
-    // Include map shape group as fallback when core mesh arrays are not ready yet.
-    const shapeGroup = scene?.getObjectByName(SHAPE_GROUP_NAME)
-    if (shapeGroup) {
-      const shapeBounds = getBoundsFromObjects([shapeGroup])
-      if (shapeBounds) {
-        return shapeBounds
-      }
+    if (shapeBounds) {
+      return shapeBounds
     }
 
     if (!scene) return null
@@ -1754,10 +1758,6 @@ export const useMapStore = defineStore('map', () => {
         nextZoom = camera.zoom || 1
       }
 
-      if (Number.isFinite(controls.minZoom)) {
-        nextZoom = Math.max(nextZoom, controls.minZoom)
-      }
-
       if (Number.isFinite(controls.maxZoom)) {
         nextZoom = Math.min(nextZoom, controls.maxZoom)
       }
@@ -1794,10 +1794,6 @@ export const useMapStore = defineStore('map', () => {
 
       if (Number.isFinite(controls.minDistance)) {
         fitDistance = Math.max(fitDistance, controls.minDistance)
-      }
-
-      if (Number.isFinite(controls.maxDistance)) {
-        fitDistance = Math.min(fitDistance, controls.maxDistance)
       }
 
       const cameraDir = camera.position.clone().sub(controls.target)
