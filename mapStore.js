@@ -1640,8 +1640,26 @@ export const useMapStore = defineStore('map', () => {
 
     for (const obj of objects) {
       if (!obj) continue
-      bounds.expandByObject(obj)
-      hasValidObject = true
+      try {
+        // Ensure world matrices are up to date for accurate bounds
+        if (typeof obj.updateWorldMatrix === 'function') obj.updateWorldMatrix(true, false)
+
+        const box = new THREE.Box3().setFromObject(obj)
+
+        // Validate box values to avoid NaN/infinite entries
+        if (box.isEmpty()) continue
+        const { min, max } = box
+        if (!Number.isFinite(min.x) || !Number.isFinite(min.y) || !Number.isFinite(min.z)) continue
+        if (!Number.isFinite(max.x) || !Number.isFinite(max.y) || !Number.isFinite(max.z)) continue
+
+        bounds.union(box)
+        hasValidObject = true
+      } catch (err) {
+        // Skip objects that cause geometry/bounds computation errors
+        // eslint-disable-next-line no-console
+        console.warn('getBoundsFromObjects: skipping object due to error computing bounds', err)
+        continue
+      }
     }
 
     if (!hasValidObject || bounds.isEmpty()) return null
