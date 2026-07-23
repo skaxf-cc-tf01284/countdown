@@ -95,12 +95,12 @@ export const useMapStore = defineStore('map', () => {
   }
 
   const getRaycastInteractiveObjects = () => {
-    const rawNodeMeshes = Array.isArray(toRaw(nodeMeshes.value)) ? toRaw(nodeMeshes.value) : []
-    const rawPortMeshes = Array.isArray(toRaw(portMeshes.value)) ? toRaw(portMeshes.value) : []
-    const rawVhlMeshes = Array.isArray(toRaw(agvVehicles.value)) ? toRaw(agvVehicles.value) : []
-    const rawLinkMeshes = Array.isArray(toRaw(linkMeshes.value)) ? toRaw(linkMeshes.value) : []
-    const rawVhlLabelMeshes = Array.isArray(toRaw(vhlLabelMeshes.value)) ? toRaw(vhlLabelMeshes.value) : []
-    const rawShelfMeshes = Array.isArray(toRaw(shelfMeshes.value)) ? toRaw(shelfMeshes.value) : []
+    const rawNodeMeshes = toRaw(nodeMeshes.value)
+    const rawPortMeshes = toRaw(portMeshes.value)
+    const rawVhlMeshes = toRaw(agvVehicles.value)
+    const rawLinkMeshes = toRaw(linkMeshes.value)
+    const rawVhlLabelMeshes = toRaw(vhlLabelMeshes.value)
+    const rawShelfMeshes = toRaw(shelfMeshes.value)
 
     const currentVersion = [
       interactiveCacheEpoch,
@@ -1478,7 +1478,7 @@ export const useMapStore = defineStore('map', () => {
     raycaster.setFromCamera(mouse, camera)
 
     // 반응성 객체 Raw 데이터 변환
-    const rawVhlMeshes = Array.isArray(toRaw(agvVehicles.value)) ? toRaw(agvVehicles.value) : []
+    const rawVhlMeshes = toRaw(agvVehicles.value)
 
     // 차량 클릭
     let intersects = raycaster.intersectObjects(rawVhlMeshes, true)
@@ -1649,12 +1649,28 @@ export const useMapStore = defineStore('map', () => {
   }
 
   const getMapBounds = (options = {}) => {
-    const { preferShelf = true } = options
-    const safeArray = (value) => Array.isArray(value) ? value : []
+    const { preferShelf = false } = options
 
-    const shelfBounds = shelfStore.rmsEnabled
-      ? getBoundsFromObjects(safeArray(toRaw(shelfMeshes.value)))
-      : null
+    const safeArray = (arr) => (Array.isArray(arr) ? arr : [])
+
+    // Prioritize shelf cluster bounds so Zoom Fit focuses on operational area,
+    // not on sparse outliers (labels/highlights/isolated objects).
+    if (preferShelf && shelfStore.rmsEnabled) {
+      const shelfBounds = getBoundsFromObjects(safeArray(toRaw(shelfMeshes.value)))
+      if (shelfBounds) {
+        // return shelfBounds
+        const coreMeshBounds = getBoundsFromObjects([
+          ...safeArray(toRaw(pathMeshes.value)),
+          ...safeArray(toRaw(nodeMeshes.value)),
+          ...safeArray(toRaw(portMeshes.value))
+        ])
+
+        if (coreMeshBounds) {
+          return coreMeshBounds.union(shelfBounds)
+        }
+        return shelfBounds
+      }
+    }
 
     const coreMeshBounds = getBoundsFromObjects([
       ...safeArray(toRaw(pathMeshes.value)),
@@ -1662,25 +1678,17 @@ export const useMapStore = defineStore('map', () => {
       ...safeArray(toRaw(portMeshes.value))
     ])
 
-    const shapeGroup = scene?.getObjectByName(SHAPE_GROUP_NAME)
-    const shapeBounds = shapeGroup ? getBoundsFromObjects([shapeGroup]) : null
-
-    if (preferShelf && shelfBounds) {
-      if (coreMeshBounds) {
-        shelfBounds.union(coreMeshBounds)
-      }
-      if (shapeBounds) {
-        shelfBounds.union(shapeBounds)
-      }
-      return shelfBounds
-    }
-
     if (coreMeshBounds) {
       return coreMeshBounds
     }
 
-    if (shapeBounds) {
-      return shapeBounds
+    // Include map shape group as fallback when core mesh arrays are not ready yet.
+    const shapeGroup = scene?.getObjectByName(SHAPE_GROUP_NAME)
+    if (shapeGroup) {
+      const shapeBounds = getBoundsFromObjects([shapeGroup])
+      if (shapeBounds) {
+        return shapeBounds
+      }
     }
 
     if (!scene) return null
@@ -1729,7 +1737,7 @@ export const useMapStore = defineStore('map', () => {
 
     const {
       padding2d = 1.12,
-      padding3d = 1.2,
+      padding3d = 1.3,
       minSpan = 1
     } = options
 
@@ -1758,6 +1766,10 @@ export const useMapStore = defineStore('map', () => {
         nextZoom = camera.zoom || 1
       }
 
+      if (Number.isFinite(controls.minZoom)) {
+        nextZoom = Math.max(nextZoom, controls.minZoom)
+      }
+
       if (Number.isFinite(controls.maxZoom)) {
         nextZoom = Math.min(nextZoom, controls.maxZoom)
       }
@@ -1777,16 +1789,19 @@ export const useMapStore = defineStore('map', () => {
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const target = center.clone()
-      const halfWidth = (size.x * padding3d) / 2
-      const halfHeight = (size.y * padding3d) / 2
-      const halfDepth = (size.z * padding3d) / 2
+      // const halfWidth = (size.x * padding3d) / 2
+      // const halfHeight = (size.y * padding3d) / 2
+      // const halfDepth = (size.z * padding3d) / 2
 
+      const sphere = new THREE.Sphere()
+      mapBounds.getBoundingSphere(sphere)
+      const radius = Math.max(sphere.radius * padding3d, minSpan)
       const vFov = THREE.MathUtils.degToRad(camera.fov)
       const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect)
 
-      const fitHeightDist = halfHeight / Math.tan(vFov / 2)
-      const fitWidthDist = halfWidth / Math.tan(hFov / 2)
-      let fitDistance = Math.max(fitHeightDist, fitWidthDist, halfDepth)
+      const fitDistanceV = radius / Math.sin(vFov / 2)
+      const fitDistanceH = radius / Math.sin(hFov / 2)
+      let fitDistance = Math.max(fitDistanceV, fitDistanceH)
 
       if (!Number.isFinite(fitDistance) || fitDistance <= 0) {
         fitDistance = camera.position.distanceTo(controls.target)
@@ -1794,6 +1809,10 @@ export const useMapStore = defineStore('map', () => {
 
       if (Number.isFinite(controls.minDistance)) {
         fitDistance = Math.max(fitDistance, controls.minDistance)
+      }
+
+      if (Number.isFinite(controls.maxDistance)) {
+        fitDistance = Math.min(fitDistance, controls.maxDistance)
       }
 
       const cameraDir = camera.position.clone().sub(controls.target)
