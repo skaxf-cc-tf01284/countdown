@@ -994,6 +994,11 @@ export const useMapStore = defineStore('map', () => {
     controlsInfo.value = controls
     rendererInfo.value = renderer
 
+    // Ensure the 3D view is framed to the map immediately after the scene is populated.
+    requestAnimationFrame(() => {
+      zoomFitMapBounds()
+    })
+
     // [Optimization 1] 기존 listeners 정리 후 신규 등록
     cleanupEventListeners()
 
@@ -1857,6 +1862,27 @@ export const useMapStore = defineStore('map', () => {
       camera.position.copy(target).addScaledVector(cameraDir, fitDistance)
       camera.lookAt(target)
       controls.update()
+      sceneZoom.value = fitDistance
+
+      if (typeof controls.dispatchEvent === 'function') {
+        controls.dispatchEvent({ type: 'change' })
+      }
+      cameraTarget.value = {
+        mode: 'PerspectiveCamera',
+        position: {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z
+        },
+        target: {
+          x: controls.target.x,
+          y: controls.target.y,
+          z: controls.target.z
+        },
+        fov: camera.fov,
+        aspect: camera.aspect,
+        distance: fitDistance
+      }
 
       return true
     }
