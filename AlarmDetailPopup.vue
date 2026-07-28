@@ -384,7 +384,52 @@ const onSave = async () => {
   if (!confirmed) return
 
   try {
-    // 저장 API에서 중복 여부를 backend 로직으로 처리
+    // 신규 등록일 때만 중복 체크 (backend enum string 응답 기준)
+    if (isCreateMode) {
+      const checkResult = await API.AcsApi.getAlarmDuplicateCheck(inputForm)
+
+      if (checkResult.status !== 200) {
+        await new Promise(resolve => {
+          new DialogProgrammatic().alert(
+            $t('ACS-MESSAGE-ALARM_ERR_DUP_CHECK'),
+            { onClose: resolve }
+          )
+        })
+        return
+      }
+
+      const resultCode = String(checkResult.data ?? '').trim().toUpperCase()
+      const allowedResultCodes = ['OK']
+
+      if (!allowedResultCodes.includes(resultCode)) {
+        let errorMessage = $t('ACS-MESSAGE-ALARM_ERR_DUP_CHECK')
+
+        switch (resultCode) {
+          case 'DUPLICATE_ALARM_ID':
+            errorMessage = $t('ACS-MESSAGE-ALARM_ERR_DUP')
+            break
+          case 'DUPLICATE_UNIT_MODEL':
+            errorMessage = $t('ACS-MESSAGE-ALARM_ERR_DUP')
+            break
+          case 'DUPLICATE_ALARM_CODE':
+            errorMessage = $t('ACS-MESSAGE-ALARM_ERR_DUP')
+            break
+          case 'DUPLICATE_ALARM':
+            errorMessage = $t('ACS-MESSAGE-ALARM_ERR_DUP')
+            break
+          default:
+            errorMessage = $t('ACS-MESSAGE-ALARM_ERR_DUP_CHECK')
+            break
+        }
+
+        await new Promise(resolve => {
+          new DialogProgrammatic().alert(errorMessage, { onClose: resolve })
+        })
+        return
+      }
+    }
+
+    // 저장
     const rslt = await API.AcsApi.saveAlarmStandard([inputForm])
 
     if (rslt.status === 200) {
