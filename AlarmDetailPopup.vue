@@ -360,10 +360,7 @@ const onSave = async () => {
       String(inputForm.unitModel).trim() === ''
     ) {
       await new Promise(resolve => {
-        new DialogProgrammatic().alert(
-          'Unit Model is required.',
-          { onClose: resolve }
-        )
+        new DialogProgrammatic().alert($t('MESSAGE-SPC_REQUIRED'), { onClose: resolve })
       })
       return
     }
@@ -430,10 +427,7 @@ const onSave = async () => {
 
       if (unitCheck.data === true) {
         await new Promise(resolve => {
-          new DialogProgrammatic().alert(
-            'Unit Model already exists.',
-            { onClose: resolve }
-          )
+          new DialogProgrammatic().alert($t('ACS-MESSAGE-ALARM_ERR_DUP'), { onClose: resolve })
         })
         return
       }
@@ -453,10 +447,7 @@ const onSave = async () => {
 
       if (idCheck.data === true) {
         await new Promise(resolve => {
-          new DialogProgrammatic().alert(
-            'Alarm ID already exists.',
-            { onClose: resolve }
-          )
+          new DialogProgrammatic().alert($t('ACS-MESSAGE-ALARM_ERR_DUP'), { onClose: resolve })
         })
         return
       }
