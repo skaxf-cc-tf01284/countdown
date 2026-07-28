@@ -18,7 +18,7 @@
 
         <!-- Unit Model -->
         <div class="option-item">
-          <span class="item-label">{{ 'Unit Model' }}<sup class="z-required-mark" /></span>
+          <span class="item-label">{{ 'Unit Model' }}<sup class="required-mark" /></span>
           <span class="item-input">
             <b-field>
               <b-input 
@@ -30,7 +30,7 @@
 
         <!-- Alarm ID -->
         <div class="option-item">
-          <span class="item-label">{{ 'Alarm ID' }}<sup class="z-required-mark" /></span>
+          <span class="item-label">{{ 'Alarm ID' }}<sup class="required-mark" /></span>
           <span class="item-input">
             <b-field>
               <b-input 
@@ -88,7 +88,7 @@
 
         <!-- Alarm Code -->
         <div class="option-item">
-          <span class="item-label">{{ 'Alarm Code' }}<sup class="z-required-mark" /></span>
+          <span class="item-label">{{ 'Alarm Code' }}<sup class="required-mark" /></span>
           <span class="item-input">
             <b-field>
               <b-input 
@@ -352,46 +352,21 @@ const onSave = async () => {
 
   // 신규 등록일 때만 체크
   if (isCreateMode) {
+    const requiredFields = [
+      { key: 'unitModel', message: $t('MESSAGE-SPC_REQUIRED') },
+      { key: 'alarmId', message: $t('ACS-MESSAGE-ALARM_VAL_ID') },
+      { key: 'alarmCode', message: $t('ACS-MESSAGE-ALARM_VAL_CODE') }
+    ]
 
-    // unit_model 필수 체크
-    if (
-      inputForm.unitModel === null ||
-      inputForm.unitModel === undefined ||
-      String(inputForm.unitModel).trim() === ''
-    ) {
-      await new Promise(resolve => {
-        new DialogProgrammatic().alert($t('MESSAGE-SPC_REQUIRED'), { onClose: resolve })
-      })
-      return
-    }
+    for (const field of requiredFields) {
+      const value = inputForm[field.key]
 
-    // alarm_id 필수 체크
-    if (
-      inputForm.alarmId === null ||
-      inputForm.alarmId === undefined ||
-      inputForm.alarmId === ''
-    ) {
-      await new Promise(resolve => {
-        new DialogProgrammatic().alert(
-          $t('ACS-MESSAGE-ALARM_VAL_ID'),
-          { onClose: resolve }
-        )
-      })
-      return
-    }
-
-    // alarm_code 필수 체크
-    if (
-      !inputForm.alarmCode ||
-      String(inputForm.alarmCode).trim() === ''
-    ) {
-      await new Promise(resolve => {
-        new DialogProgrammatic().alert(
-          $t('ACS-MESSAGE-ALARM_VAL_CODE'),
-          { onClose: resolve }
-        )
-      })
-      return
+      if (value === null || value === undefined || String(value).trim() === '') {
+        await new Promise(resolve => {
+          new DialogProgrammatic().alert(field.message, { onClose: resolve })
+        })
+        return
+      }
     }
   }
 
@@ -409,51 +384,7 @@ const onSave = async () => {
   if (!confirmed) return
 
   try {
-
-    // 신규 등록일 때만 중복 체크: 먼저 Unit Model, sau đó Alarm ID (riêng biệt)
-    if (isCreateMode) {
-      // Unit Model 중복 체크
-      const unitCheck = await API.AcsApi.getAlarmDuplicateCheck({ unitModel: inputForm.unitModel })
-
-      if (unitCheck.status !== 200) {
-        await new Promise(resolve => {
-          new DialogProgrammatic().alert(
-            $t('ACS-MESSAGE-ALARM_ERR_DUP_CHECK'),
-            { onClose: resolve }
-          )
-        })
-        return
-      }
-
-      if (unitCheck.data === true) {
-        await new Promise(resolve => {
-          new DialogProgrammatic().alert($t('ACS-MESSAGE-ALARM_ERR_DUP'), { onClose: resolve })
-        })
-        return
-      }
-
-      // Alarm ID 중복 체크
-      const idCheck = await API.AcsApi.getAlarmDuplicateCheck({ alarmId: inputForm.alarmId })
-
-      if (idCheck.status !== 200) {
-        await new Promise(resolve => {
-          new DialogProgrammatic().alert(
-            $t('ACS-MESSAGE-ALARM_ERR_DUP_CHECK'),
-            { onClose: resolve }
-          )
-        })
-        return
-      }
-
-      if (idCheck.data === true) {
-        await new Promise(resolve => {
-          new DialogProgrammatic().alert($t('ACS-MESSAGE-ALARM_ERR_DUP'), { onClose: resolve })
-        })
-        return
-      }
-    }
-
-    // 저장
+    // 저장 API에서 중복 여부를 backend 로직으로 처리
     const rslt = await API.AcsApi.saveAlarmStandard([inputForm])
 
     if (rslt.status === 200) {
@@ -543,7 +474,7 @@ onMounted(() => {
         color: red;
       }
 
-      .z-required-mark::after {
+      .required-mark::after {
         content: ' *';
         color: red;
       }
