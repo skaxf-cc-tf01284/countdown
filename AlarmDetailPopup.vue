@@ -18,7 +18,7 @@
 
         <!-- Unit Model -->
         <div class="option-item">
-          <span class="item-label">{{ 'Unit Model' }}<sup>*</sup></span>
+          <span class="item-label">{{ 'Unit Model' }}<sup class="z-required-mark" /></span>
           <span class="item-input">
             <b-field>
               <b-input 
@@ -30,7 +30,7 @@
 
         <!-- Alarm ID -->
         <div class="option-item">
-          <span class="item-label">{{ 'Alarm ID' }}<sup>*</sup></span>
+          <span class="item-label">{{ 'Alarm ID' }}<sup class="z-required-mark" /></span>
           <span class="item-input">
             <b-field>
               <b-input 
@@ -88,7 +88,7 @@
 
         <!-- Alarm Code -->
         <div class="option-item">
-          <span class="item-label">{{ 'Alarm Code' }}<sup>*</sup></span>
+          <span class="item-label">{{ 'Alarm Code' }}<sup class="z-required-mark" /></span>
           <span class="item-input">
             <b-field>
               <b-input 
@@ -549,6 +549,11 @@ onMounted(() => {
       text-align: left;
 
       sup {
+        color: red;
+      }
+
+      .z-required-mark::after {
+        content: ' *';
         color: red;
       }
     }
