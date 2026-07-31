@@ -1,0 +1,23 @@
+RMS (Rack Management System) — Frontend Developer
+Client: SK C&C (South Korea) | Team size: 7 members | Methodology: Agile/Scrum
+
+Project Overview:
+Extended an existing web-based AGV Control System (ACS) with a Rack Management System (RMS) module for automated warehouse operations. The system enables real-time shelf status monitoring (supporting up to 30,000 shelves), inbound/outbound strategy configuration, operational history tracking, and zone control — built on top of the iFacts Framework V3.
+
+Tech Stack: Vue 3, Three.js (2D/3D rendering), WebSocket (Delta Update), iFacts Framework V3, RESTful API, MariaDB, GitHub (Git Flow)
+
+Key Responsibilities:
+
+Developed Inbound/Outbound Strategy Settings UI with full backend integration
+
+Built Zone Integrated Control interface and RMS color settings screen
+
+Implemented auto-zoom & center behavior on the real-time monitoring map
+
+Added AT header authentication for Playback Filestream requests
+
+Applied multilingual support (EN/KO) across all operational screens
+
+Enforced role-based CRUD permissions per user role (Admin / Manager / User)
+
+Executed test cases and produced test reports for feature releases
